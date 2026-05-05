@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Sale;
 use App\Models\Product;
 use App\Models\SaleItem;
+use App\Models\PurchaseItem;
 use App\Enums\DatePeriod;
 use Illuminate\Support\Facades\DB;
 use App\Models\FinanceTransaction;
@@ -198,28 +199,55 @@ class DashboardStatsService
 
        
         
-    public function getStockNow(Carbon $startDate, Carbon $endDate): array
+    /**
+     * Get per-product stock comparison across last N days.
+     * Derives historical stock from current quantity and reverses sale/purchase
+     * transactions that occurred after the end of each target day.
+     */
+    public function getStockComparison(int $productId, int $days = 2): array
     {
-         $cacheKey = "dashboard_stock_now_{$startDate->format('Ymd')}_{$endDate->format('Ymd')}";
+        $days = max(2, min(30, $days));
+        $today = Carbon::now()->startOfDay();
+        $cacheKey = "dashboard_stock_compare_{$productId}_{$days}_{$today->format('Ymd')}";
 
-         return Cache::remember($cacheKey, now()->addMinutes(30), function () use ($startDate, $endDate) {
-            $stocks = Product::selectRaw('DATE(created_at) as date, sum(quantity) as total')
-            ->where('created_at', '>=', Carbon::now()->subDays(7))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
-            // Fill missing dates with 0
-            $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
-            $chartData = [];
-
-            foreach ($period as $date) {
-                $formattedDate = $date->format('Y-m-d');
-                $chartData[$formattedDate] = $data[$formattedDate] ?? 0;
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($productId, $days, $today) {
+            $product = Product::find($productId);
+            if (!$product) {
+                return ['labels' => [], 'data' => [], 'product_name' => null];
             }
 
-            return $chartData;
-         });
+            $currentQty = (int) $product->quantity;
+            $labels = [];
+            $data = [];
+
+            for ($i = $days - 1; $i >= 0; $i--) {
+                $day = $today->copy()->subDays($i);
+                $endOfDay = $day->copy()->endOfDay();
+
+                $salesAfter = (int) SaleItem::where('product_id', $productId)
+                    ->whereHas('sale', function ($q) use ($endOfDay) {
+                        $q->where('status', 'completed')
+                          ->where('sale_date', '>', $endOfDay);
+                    })
+                    ->sum('quantity');
+
+                $purchasesAfter = (int) PurchaseItem::where('product_id', $productId)
+                    ->whereHas('purchase', function ($q) use ($endOfDay) {
+                        $q->whereIn('status', ['received', 'paid'])
+                          ->where('purchase_date', '>', $endOfDay);
+                    })
+                    ->sum('quantity');
+
+                $labels[] = $day->format('Y-m-d');
+                $data[] = $currentQty + $salesAfter - $purchasesAfter;
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $data,
+                'product_name' => $product->name,
+            ];
+        });
     }
 
     /**

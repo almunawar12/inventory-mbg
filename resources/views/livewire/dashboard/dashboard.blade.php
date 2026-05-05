@@ -136,16 +136,32 @@
             </div>
         </div>
 
-        <!-- Cash Flow -->
-         <div class="col-span-1 rounded-xl border bg-card text-card-foreground shadow-sm break-inside-avoid">
-           
+        <!-- Stock Comparison (per product) -->
+        <div class="col-span-1 rounded-xl border bg-card text-card-foreground shadow-sm break-inside-avoid">
             <div class="p-4 flex flex-col space-y-1.5 pb-2">
-                <h3 class="font-semibold leading-none tracking-tight">Stock Daily</h3>
-                <p class="text-xs text-muted-foreground">Daily Stock performance.</p>
-                
+                <div class="flex justify-between items-start gap-2">
+                    <div>
+                        <h3 class="font-semibold leading-none tracking-tight">Stock Comparison</h3>
+                        <p class="text-xs text-muted-foreground">Per-product daily stock.</p>
+                    </div>
+                    <select wire:model.live="compareDays" class="text-xs border rounded pl-2 pr-7 py-1">
+                        <option value="2">2d</option>
+                        <option value="7">7d</option>
+                        <option value="30">30d</option>
+                    </select>
+                </div>
+                <div class="mt-2"
+                     x-data
+                     @change="$wire.set('selectedProductId', $event.target.value || null, true)">
+                    <x-tom-select
+                        wire:model="selectedProductId"
+                        placeholder="Search product..."
+                        :options="collect($productOptions)->map(fn($p) => ['value' => $p['id'], 'text' => $p['name'].' ('.$p['sku'].')'])->all()"
+                    />
+                </div>
             </div>
             <div class="p-4 pt-0" wire:ignore>
-                <div id="stockChart" class="w-full h-[250px]"></div>
+                <div id="stockCompareChart" class="w-full h-[250px]"></div>
             </div>
         </div>
         
@@ -319,7 +335,7 @@
     document.addEventListener('livewire:initialized', () => {
         let salesChart = null;
         let cashFlowChart = null;
-        let stockChart = null;
+        let stockCompareChart = null;
         
         const currencySymbol = "{{ \App\Models\Setting::get('currency_symbol', 'Rp') }}";
         const currencyPosition = "{{ \App\Models\Setting::get('currency_position', 'left') }}";
@@ -384,53 +400,42 @@
                 }
             };
 
-            const stockOptions = {
+            const stockCompareOptions = {
                 series: [{
                     name: 'Stock',
-                    data: data.stock.data
+                    data: data.stockCompare.data
                 }],
                 chart: {
-                    type: 'area',
+                    type: 'bar',
                     height: 250,
                     toolbar: { show: false },
                     fontFamily: 'inherit',
                     parentHeightOffset: 0
                 },
-                dataLabels: { enabled: false },
-                stroke: { curve: 'smooth', width: 2 },
+                title: {
+                    text: data.stockCompare.product_name || '',
+                    style: { fontSize: '12px', fontWeight: 500 }
+                },
+                plotOptions: {
+                    bar: { columnWidth: '50%', borderRadius: 4 }
+                },
+                dataLabels: { enabled: true, style: { fontSize: '10px' } },
                 xaxis: {
-                    categories: data.stock.labels,
+                    categories: data.stockCompare.labels,
                     axisBorder: { show: false },
                     axisTicks: { show: false },
-                    labels: {
-                        style: { cssClass: 'text-[10px] text-muted-foreground' }
-                    }
+                    labels: { style: { cssClass: 'text-[10px] text-muted-foreground' } }
                 },
                 yaxis: {
                     labels: {
-                        style: { cssClass: 'text-[10px] text-muted-foreground' }
+                        style: { cssClass: 'text-[10px] text-muted-foreground' },
+                        formatter: (val) => Math.round(val)
                     }
                 },
                 tooltip: {
-                    y: {
-                        formatter: function (val) {
-                             return formatMoney(val);
-                        }
-                    }
+                    y: { formatter: (val) => Math.round(val) + ' qty' }
                 },
-                fill: {
-                    type: 'gradient',
-                    gradient: {
-                        shadeIntensity: 1,
-                        opacityFrom: 0.7,
-                        opacityTo: 0.2,
-                        stops: [0, 90, 100]
-                    }
-                },
-                colors: ['#0ea5e9'], // Sky 500
-                tooltip: {
-                  
-                }
+                colors: ['#0ea5e9']
             };
 
             // Cash Flow Chart
@@ -522,15 +527,15 @@
             };
 
             if (salesChart) salesChart.destroy();
-            if (stockChart) stockChart.destroy();
+            if (stockCompareChart) stockCompareChart.destroy();
             if (cashFlowChart) cashFlowChart.destroy();
             if (window.expenseChartInst) window.expenseChartInst.destroy();
 
             salesChart = new ApexCharts(document.querySelector("#salesChart"), salesOptions);
             salesChart.render();
 
-            stockChart = new ApexCharts(document.querySelector("#stockChart"), stockOptions);
-            stockChart.render();
+            stockCompareChart = new ApexCharts(document.querySelector("#stockCompareChart"), stockCompareOptions);
+            stockCompareChart.render();
 
             cashFlowChart = new ApexCharts(document.querySelector("#cashFlowChart"), cashFlowOptions);
             cashFlowChart.render();
@@ -540,18 +545,33 @@
         };
 
         // Initial Load
+        let lastStockCompare = @json($stockCompareChart);
         initCharts({
             sales: @json($salesChart),
-            stock: @json($stockChart),
+            stockCompare: lastStockCompare,
             cashFlow: @json($cashFlowChart),
             expense: @json($expenseChart)
         });
 
+        // Livewire v4: payload received directly (not wrapped in args array).
+        // Some events may still arrive as [payload] depending on dispatch shape, so unwrap defensively.
+        const unwrap = (d) => Array.isArray(d) ? d[0] : d;
 
-
-        // Listen for server-side updates
         Livewire.on('stats-updated', (data) => {
-             initCharts(data[0]); // data is array of args
+            const payload = unwrap(data);
+            initCharts({ ...payload, stockCompare: lastStockCompare });
+        });
+
+        Livewire.on('stock-compare-updated', (data) => {
+            const payload = unwrap(data);
+            if (!payload) return;
+            lastStockCompare = payload;
+            if (!stockCompareChart) return;
+            stockCompareChart.updateOptions({
+                xaxis: { categories: payload.labels },
+                title: { text: payload.product_name || '' }
+            });
+            stockCompareChart.updateSeries([{ name: 'Stock', data: payload.data }]);
         });
     });
 </script>

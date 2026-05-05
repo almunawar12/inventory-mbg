@@ -23,20 +23,50 @@ class Dashboard extends Component
     public array $topProducts = [];
     public array $topCustomers = [];
     public array $minimProducts = [];
-    
+    public array $productOptions = [];
+
+    // Stock comparison chart (per product)
+    public ?int $selectedProductId = null;
+    public int $compareDays = 2;
+    public array $stockCompareChart = [];
 
     // Charts Data
     public array $salesChart = [];
-    public array $stockChart = [];
     public array $cashFlowChart = [];
     public array $expenseChart = [];
-    public $labels = [];
-    public $data = [];
 
     public function mount(DashboardStatsService $service)
     {
+        $this->productOptions = Product::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'sku'])
+            ->toArray();
+
         $this->loadStats($service);
-        $this->loadChartData();
+        $this->stockCompareChart = ['labels' => [], 'data' => [], 'product_name' => null];
+    }
+
+    public function updatedSelectedProductId()
+    {
+        $this->loadStockCompare(app(DashboardStatsService::class));
+    }
+
+    public function updatedCompareDays()
+    {
+        $this->loadStockCompare(app(DashboardStatsService::class));
+    }
+
+    protected function loadStockCompare(DashboardStatsService $service): void
+    {
+        if (!$this->selectedProductId) {
+            $this->stockCompareChart = ['labels' => [], 'data' => [], 'product_name' => null];
+            return;
+        }
+        $this->stockCompareChart = $service->getStockComparison(
+            (int) $this->selectedProductId,
+            (int) $this->compareDays
+        );
+        $this->dispatch('stock-compare-updated', $this->stockCompareChart);
     }
 
     public function updatedDateFilter()
@@ -61,22 +91,6 @@ class Dashboard extends Component
 
   
 
-    public function loadChartData()
-    {
-        // Contoh: Mengambil data 7 hari terakhir
-        $stocks = Product::selectRaw('DATE(created_at) as date, sum(quantity) as total')
-            ->where('created_at', '>=', Carbon::now()->subDays(7))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
-        $this->dispatch('chartDataUpdated', $this->labels, $this->data);
-        $this->labels = $stocks->pluck('date')->toArray();
-        $this->data = $stocks->pluck('total')->toArray();
-        
-    }
-
-    
 
 
     public function loadStats(DashboardStatsService $service)
@@ -115,13 +129,6 @@ class Dashboard extends Component
             'data' => array_values($salesTrend),
         ];
 
-        $stockNow = $service->getStockNow($startDate, $endDate);
-         
-        $this->stockChart = [
-            'labels' => array_keys($stockNow),
-            'data' => array_values($stockNow),
-        ];
-
         $cashFlowTrend = $service->getCashFlowTrend($startDate, $endDate);
 
         $this->cashFlowChart = [
@@ -138,7 +145,6 @@ class Dashboard extends Component
 
         $this->dispatch('stats-updated', [
             'sales' => $this->salesChart,
-             'stock' => $this->stockChart,
             'cashFlow' => $this->cashFlowChart,
             'expense' => $this->expenseChart,
         ]);
