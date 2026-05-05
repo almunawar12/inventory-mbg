@@ -9,23 +9,54 @@
                 {{ $isEditing ? 'Make changes to your product here. Click save when you\'re done.' : 'Add a new product to your inventory.' }}
             </p>
        
-         <h2>Form import excel</h2>
+        </div>
+
+        @unless($isEditing)
+        <div class="mb-4 p-3 rounded-md border border-dashed border-gray-300 bg-gray-50">
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <h4 class="text-sm font-medium">Bulk Import dari Excel</h4>
+                <a href="{{ route('products.template') }}"
+                   class="text-xs text-sky-600 hover:underline">
+                    ⬇ Download Template
+                </a>
+            </div>
             @if(session('success'))
-                <div class="alert alert-success" role="alert">
+                <div class="text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded mb-2">
                     {{ session('success') }}
                 </div>
             @endif
-
-            <form action="{{ route('product.import') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="mb-4">
-                    <label for="file" class="form-label">File excel</label>
-                    <input class="form-control" type="file" id="file" name="file" required>
+            @if(session('warning'))
+                <div class="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded mb-2">
+                    {{ session('warning') }}
                 </div>
-
-                <button type="submit" class="btn btn-primary">Import</button>
+            @endif
+            @if(session('failures') && count(session('failures')) > 0)
+                <details class="text-xs bg-red-50 px-2 py-1 rounded mb-2">
+                    <summary class="cursor-pointer text-red-700">Lihat detail error ({{ count(session('failures')) }} baris)</summary>
+                    <ul class="mt-1 max-h-40 overflow-y-auto space-y-0.5">
+                        @foreach(session('failures') as $f)
+                            <li class="text-red-700">
+                                Baris {{ $f->row() }} kolom <b>{{ $f->attribute() }}</b>:
+                                {{ implode(', ', $f->errors()) }}
+                                @if($f->values())
+                                    <span class="text-red-500">(nilai: "{{ $f->values()[$f->attribute()] ?? '' }}")</span>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                </details>
+            @endif
+            <form action="{{ route('product.import') }}" method="POST" enctype="multipart/form-data"
+                  class="flex items-center gap-2">
+                @csrf
+                <input type="file" name="file" accept=".xls,.xlsx" required
+                       class="text-xs flex-1 border rounded px-2 py-1">
+                <button type="submit" class="text-xs px-3 py-1 rounded bg-sky-600 text-white hover:bg-sky-700">
+                    Import
+                </button>
             </form>
         </div>
+        @endunless
         <form wire:submit="save" class="space-y-6">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -29,7 +29,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::get('import-products', [\App\Http\Controllers\Api\ProductController::class, 'showImportForm']);
-Route::post('import-products', [\App\Http\Controllers\Api\ProductController::class, 'import'])->name('product.import');
+    Route::post('import-products', [\App\Http\Controllers\Api\ProductController::class, 'import'])->name('product.import');
+    Route::get('products/template', [\App\Http\Controllers\Api\ProductController::class, 'downloadTemplate'])->name('products.template');
 
     // =========================================================================
     // Transactions

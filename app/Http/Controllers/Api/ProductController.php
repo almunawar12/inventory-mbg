@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Cache;
 use App\Imports\ProductImport;
+use App\Exports\ProductTemplateExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
@@ -19,12 +20,44 @@ class ProductController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xls,xlsx'
+            'file' => 'required|mimes:xls,xlsx|max:5120',
         ]);
 
-        Excel::import(new ProductImport(), $request->file('file'));
+        $import = new ProductImport();
+        Excel::import($import, $request->file('file'));
 
-        return redirect()->back()->with('success', 'Data siswa berhasil di import');
+        $msg = "Berhasil import {$import->imported} produk.";
+
+        // Filter out errors that are just "The sku field is required." for empty rows
+        $actualFailures = $import->failures()->filter(function ($failure) {
+            $values = array_filter($failure->values());
+            return !empty($values);
+        });
+
+        $failureCount = $actualFailures->count();
+        $errorCount = count($import->errors());
+
+        // Only count real validation failures
+        $totalFailed = $failureCount + $errorCount;
+
+        if ($totalFailed > 0 || $import->skippedFk > 0) {
+            $failedInfo = [];
+            if ($totalFailed > 0) $failedInfo[] = "{$totalFailed} baris gagal validasi";
+            if ($import->skippedFk > 0) $failedInfo[] = "{$import->skippedFk} data kategori/unit tidak ditemukan";
+
+            $msg .= " " . implode(' dan ', $failedInfo) . ".";
+
+            return redirect()->back()
+                ->with('warning', $msg)
+                ->with('failures', $actualFailures);
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new ProductTemplateExport(), 'product_import_template.xlsx');
     }
 
     public function search(Request $request)
