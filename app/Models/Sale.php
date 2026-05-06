@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\SaleStatus;
+use App\Enums\SaleZone;
 use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +17,7 @@ class Sale extends Model
     protected $fillable = [
         'invoice_number',
         'customer_id',
+        'zone',
         'created_by',
         'sale_date',
         'status',
@@ -32,6 +34,7 @@ class Sale extends Model
     protected $casts = [
         'sale_date' => 'datetime',
         'status' => SaleStatus::class,
+        'zone' => SaleZone::class,
         'payment_method' => PaymentMethod::class,
         'subtotal' => 'integer',
         'global_discount' => 'integer',

@@ -4,6 +4,7 @@ namespace App\DTOs;
 
 use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
+use App\Enums\SaleZone;
 use Carbon\Carbon;
 
 readonly class SaleData
@@ -22,6 +23,7 @@ readonly class SaleData
         public int $cash_received = 0,
         public int $change = 0,
         public int $global_discount = 0,
+        public SaleZone $zone = SaleZone::KOTA,
     ) {}
 
     public static function fromArray(array $data): self
@@ -37,6 +39,7 @@ readonly class SaleData
             cash_received: (int) ($data['cash_received'] ?? 0),
             change: (int) ($data['change'] ?? 0),
             global_discount: (int) ($data['global_discount'] ?? 0),
+            zone: isset($data['zone']) ? SaleZone::from($data['zone']) : SaleZone::KOTA,
         );
     }
 
@@ -53,6 +56,7 @@ readonly class SaleData
             'cash_received' => $this->cash_received,
             'change' => $this->change,
             'global_discount' => $this->global_discount,
+            'zone' => $this->zone->value,
         ];
     }
 }

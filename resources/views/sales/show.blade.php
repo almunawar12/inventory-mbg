@@ -64,6 +64,16 @@
                             </div>
                         </div>
 
+                        <!-- Zone -->
+                        <div>
+                            <label class="text-sm font-medium leading-none text-gray-500">Zona Pengiriman</label>
+                            <div class="mt-1">
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium border bg-amber-50 text-amber-800 border-amber-200">
+                                    {{ $sale->zone?->label() ?? 'Garut Kota' }}
+                                </span>
+                            </div>
+                        </div>
+
 
 
                         <!-- Created By -->

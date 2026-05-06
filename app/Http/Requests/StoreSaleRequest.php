@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\SaleStatus;
+use App\Enums\SaleZone;
 use App\Enums\PaymentMethod;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,6 +27,7 @@ class StoreSaleRequest extends FormRequest
     {
         return [
             'customer_id' => ['nullable', 'exists:customers,id'],
+            'zone' => ['nullable', Rule::enum(SaleZone::class)],
             'sale_date' => ['required', 'date'],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
             'status' => ['nullable', Rule::enum(SaleStatus::class)],
@@ -37,7 +39,7 @@ class StoreSaleRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_price' => ['required_unless:zone,kota', 'numeric', 'min:1'],
             'items.*.discount' => ['nullable', 'numeric', 'min:0'],
         ];
     }
@@ -47,7 +49,8 @@ class StoreSaleRequest extends FormRequest
         return [
             'items.*.product_id.exists' => 'The selected product does not exist.',
             'items.*.quantity.min' => 'Quantity must be at least 1.',
-            'items.*.unit_price.min' => 'Unit price must be at least 0.',
+            'items.*.unit_price.min' => 'Unit price must be at least 1.',
+            'items.*.unit_price.required_unless' => 'Unit price wajib diisi untuk zona Garut Utara/Selatan.',
             'items.*.discount.min' => 'Discount must be at least 0.',
         ];
     }

@@ -7,6 +7,7 @@ use App\Models\Sale;
 use App\DTOs\SaleData;
 use App\Models\Product;
 use App\Enums\SaleStatus;
+use App\Enums\SaleZone;
 use App\Enums\PaymentMethod;
 use App\Exceptions\SaleException;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +37,7 @@ class SaleService
                 $sale = Sale::create([
                     'invoice_number' => $this->generateInvoiceNumber(),
                     'customer_id' => $data->customer_id,
+                    'zone' => $data->zone,
                     'created_by' => $data->created_by,
                     'sale_date' => $data->sale_date,
                     'status' => $data->status,
@@ -73,7 +75,13 @@ class SaleService
                     $product->quantity -= $itemData->quantity;
                     $product->save();
 
-                    $unitPrice = $product->selling_price;
+                    // Zone Kota: harga jual locked ke selling_price master.
+                    // Zone Utara/Selatan: pakai unit_price dari payload (input manual saat transaksi).
+                    if ($data->zone->isFixedPrice()) {
+                        $unitPrice = $product->selling_price;
+                    } else {
+                        $unitPrice = $itemData->unit_price > 0 ? $itemData->unit_price : $product->selling_price;
+                    }
                     $quantity = $itemData->quantity;
                     $discount = $itemData->discount;
 

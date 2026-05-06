@@ -260,6 +260,10 @@
                     <span class="header-label">Kepada Yth,</span>
                     <span class="header-value">{{ $sale->customer->name ?? 'Guest' }}</span>
                 </div>
+                <div class="header-row">
+                    <span class="header-label">Zona</span>
+                    <span class="header-value">{{ $sale->zone?->label() ?? 'Garut Kota' }}</span>
+                </div>
             </div>
         </div>
 

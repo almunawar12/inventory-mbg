@@ -27,7 +27,9 @@
                             <thead class="bg-gray-50 sticky top-0 z-10">
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <span x-text="zone === 'kota' ? 'Price' : 'Price (editable)'"></span>
+                                    </th>
                                     <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
                                     <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Disc/Unit</th>
@@ -42,7 +44,26 @@
                                             <div class="text-sm font-medium text-gray-900" x-text="item.name"></div>
                                             <div class="text-xs text-gray-500" x-text="item.sku"></div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500" x-text="formatCurrency(item.price)"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
+                                            <template x-if="zone === 'kota'">
+                                                <span x-text="formatCurrency(item.price)"></span>
+                                            </template>
+                                            <template x-if="zone !== 'kota'">
+                                                <div class="relative rounded-md shadow-sm w-32 ml-auto">
+                                                    <div class="absolute inset-y-0 flex items-center pointer-events-none" :class="window.currencyPosition === 'left' ? 'left-0 pl-2' : 'right-0 pr-2'">
+                                                        <span class="text-gray-500 sm:text-xs" x-text="window.currencySymbol"></span>
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        :value="formatNumber(item.price)"
+                                                        @input="item.price = unformatNumber($event.target.value)"
+                                                        class="focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-amber-300 rounded-md bg-amber-50"
+                                                        :class="window.currencyPosition === 'left' ? 'pl-8 pr-2 text-right' : 'pr-8 pl-2 text-left'"
+                                                        placeholder="0"
+                                                    >
+                                                </div>
+                                            </template>
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
                                             <div class="flex items-center justify-center">
                                                 <input type="number" x-model="item.quantity" min="1" :max="item.max_stock"
@@ -103,6 +124,31 @@
                 </div>
 
                 <div class="p-4 space-y-6 flex-1 overflow-y-auto">
+                    <!-- Zone Selector -->
+                    <div class="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-amber-700 uppercase">Zona Pengiriman</span>
+                            <span class="text-[10px] font-semibold text-amber-700"
+                                  x-text="zone === 'kota' ? 'Harga: Tetap' : 'Harga: Manual'"></span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <template x-for="z in ['kota','selatan']" :key="z">
+                                <button
+                                    type="button"
+                                    @click="setZone(z)"
+                                    class="px-2 py-2 text-xs font-bold uppercase rounded-md border transition-colors"
+                                    :class="zone === z
+                                        ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-amber-100'"
+                                    x-text="zoneLabel(z)"
+                                ></button>
+                            </template>
+                        </div>
+                        <p x-show="zone !== 'kota'" class="text-[11px] text-amber-700 mt-2">
+                            Harga jual per item bisa di-input manual di tabel.
+                        </p>
+                    </div>
+
                     <!-- Customer Section -->
                     <div class="bg-indigo-50 rounded-lg p-4 border border-indigo-100 relative group">
                         <div class="flex justify-between items-start mb-2">
@@ -166,82 +212,8 @@
                         </div>
                     </div>
 
-                    <!-- Payment Input -->
+                    <!-- Notes -->
                     <div class="space-y-4 pt-4 border-t border-gray-200">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Payment Method</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button
-                                    @click="payment.method = 'cash'"
-                                    class="px-4 py-2 text-sm font-medium rounded-md border"
-                                    :class="payment.method === 'cash' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
-                                >
-                                    CASH
-                                </button>
-                                <button
-                                    @click="payment.method = 'transfer'"
-                                    class="px-4 py-2 text-sm font-medium rounded-md border"
-                                    :class="payment.method === 'transfer' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
-                                >
-                                    TRANSFER
-                                </button>
-                            </div>
-                        </div>
-
-                        <template x-if="payment.method === 'cash'">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Cash Received</label>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 flex items-center pointer-events-none" :class="window.currencyPosition === 'left' ? 'left-0 pl-3' : 'right-0 pr-3'">
-                                        <span class="text-gray-500 font-bold" x-text="window.currencySymbol"></span>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        :value="formatNumber(payment.cash_received)"
-                                        @input="payment.cash_received = unformatNumber($event.target.value)"
-                                        class="block w-full py-3 text-lg font-bold text-gray-900 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                                        :class="window.currencyPosition === 'left' ? 'pl-10 pr-3 text-left' : 'pr-10 pl-3 text-right'"
-                                        placeholder="0"
-                                    >
-                                </div>
-
-                                <!-- Quick Cash Buttons -->
-                                <div class="grid grid-cols-4 gap-2 mt-2">
-                                    <button @click="payment.cash_received = total" class="px-2 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-xs font-bold text-gray-700">
-                                        EXACT
-                                    </button>
-                                    <button @click="payment.cash_received = (parseInt(payment.cash_received) || 0) + 100000" class="px-2 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-xs font-bold text-gray-700">
-                                        +100K
-                                    </button>
-                                    <button @click="payment.cash_received = (parseInt(payment.cash_received) || 0) + 50000" class="px-2 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-xs font-bold text-gray-700">
-                                        +50K
-                                    </button>
-                                    <button @click="payment.cash_received = (parseInt(payment.cash_received) || 0) + 20000" class="px-2 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-xs font-bold text-gray-700">
-                                        +20K
-                                    </button>
-                                    <button @click="payment.cash_received = (parseInt(payment.cash_received) || 0) + 10000" class="px-2 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-xs font-bold text-gray-700">
-                                        +10K
-                                    </button>
-                                    <button @click="payment.cash_received = (parseInt(payment.cash_received) || 0) + 5000" class="px-2 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-xs font-bold text-gray-700">
-                                        +5K
-                                    </button>
-                                    <button @click="payment.cash_received = (parseInt(payment.cash_received) || 0) + 2000" class="px-2 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-xs font-bold text-gray-700">
-                                        +2K
-                                    </button>
-                                    <button @click="payment.cash_received = (parseInt(payment.cash_received) || 0) + 1000" class="px-2 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-xs font-bold text-gray-700">
-                                        +1K
-                                    </button>
-                                </div>
-                                <div class="bg-green-50 p-3 rounded-md border border-green-100 flex justify-between items-center mt-2"
-                                     :class="change < 0 ? 'bg-red-50 border-red-100 text-red-800' : 'bg-green-50 border-green-100 text-green-800'">
-                                    <span class="text-sm font-medium uppercase" x-text="change < 0 ? 'Due' : 'Change'"></span>
-                                    <span class="text-xl font-bold"
-                                          :class="change < 0 ? 'text-red-700' : 'text-green-700'"
-                                          x-text="formatCurrency(Math.abs(change))"></span>
-                                </div>
-                            </div>
-                        </template>
-
                         <div>
                             <textarea
                                 x-model="payment.notes"
@@ -283,6 +255,7 @@
                 return {
                     cart: [],
                     selectedCustomer: null,
+                    zone: 'kota',
                     payment: {
                         method: 'cash',
                         cash_received: 0,
@@ -312,11 +285,15 @@
                         const savedGlobalDiscount = localStorage.getItem('pos_globalDiscount');
                         if (savedGlobalDiscount) this.globalDiscount = parseInt(savedGlobalDiscount);
 
+                        const savedZone = localStorage.getItem('pos_zone');
+                        if (savedZone) this.zone = savedZone;
+
                         // Watchers
                         this.$watch('cart', (val) => localStorage.setItem('pos_cart', JSON.stringify(val)));
                         this.$watch('selectedCustomer', (val) => localStorage.setItem('pos_customer', JSON.stringify(val)));
                         this.$watch('payment', (val) => localStorage.setItem('pos_payment', JSON.stringify(val)));
                         this.$watch('globalDiscount', (val) => localStorage.setItem('pos_globalDiscount', val));
+                        this.$watch('zone', (val) => localStorage.setItem('pos_zone', val));
 
                         this.initProductSelect();
                         this.initCustomerSelect();
@@ -477,6 +454,24 @@
                         localStorage.removeItem('pos_customer');
                         localStorage.removeItem('pos_payment');
                         localStorage.removeItem('pos_globalDiscount');
+                        localStorage.removeItem('pos_zone');
+                    },
+
+                    // Zone helpers
+                    zoneLabel(z) {
+                        return { kota: 'Garut Kota', selatan: 'Garut Selatan' }[z] || z;
+                    },
+
+                    setZone(z) {
+                        this.zone = z;
+                        // Reset price ke selling_price snapshot tiap pindah zone
+                        // Untuk Kota: lock ke selling_price.
+                        // Untuk Utara/Selatan: default ke selling_price tapi editable.
+                        this.cart.forEach(item => {
+                            if (item.selling_price !== undefined) {
+                                item.price = item.selling_price;
+                            }
+                        });
                     },
 
                     // Cart Management
@@ -496,6 +491,7 @@
                                     name: product.name,
                                     sku: product.sku,
                                     price: product.selling_price,
+                                    selling_price: product.selling_price,
                                     quantity: 1,
                                     max_stock: product.quantity,
                                     unit: product.unit ? product.unit.symbol : '',
@@ -623,11 +619,6 @@
                     // Confirmation
                     openConfirmation() {
                         if (this.cart.length === 0) return;
-                        if (this.payment.method === 'cash' && this.payment.cash_received < this.total) {
-                            this.$dispatch('toast', { message: 'Insufficient payment!', type: 'error' });
-                            return;
-                        }
-
                         this.$dispatch('open-modal', { name: 'confirmation-modal' });
                     },
 
@@ -636,18 +627,29 @@
                         this.isSubmitting = true;
 
                         try {
+                            // Zone Utara/Selatan: validasi harga > 0
+                            if (this.zone !== 'kota') {
+                                const invalid = this.cart.find(it => !it.price || parseInt(it.price) < 1);
+                                if (invalid) {
+                                    this.$dispatch('toast', { message: 'Harga item "' + invalid.name + '" wajib diisi (zona ' + this.zoneLabel(this.zone) + ').', type: 'error' });
+                                    this.isSubmitting = false;
+                                    return;
+                                }
+                            }
+
                             const items = this.cart.map(item => ({
                                 product_id: item.id,
                                 quantity: item.quantity,
-                                unit_price: item.price,
+                                unit_price: parseInt(item.price) || 0,
                                 discount: item.discount
                             }));
 
                             const payload = {
                                 customer_id: this.selectedCustomer?.id,
+                                zone: this.zone,
                                 items: items,
-                                payment_method: this.payment.method,
-                                cash_received: this.payment.cash_received,
+                                payment_method: 'cash',
+                                cash_received: this.total,
                                 notes: this.payment.notes,
                                 global_discount: this.globalDiscount,
                                 status: this.saleStatus,
@@ -694,6 +696,7 @@
                     resetForm() {
                         this.cart = [];
                         this.selectedCustomer = null;
+                        this.zone = 'kota';
                         this.payment = {
                             method: 'cash',
                             cash_received: 0,
@@ -724,6 +727,10 @@
                 <!-- Summary Grid -->
                 <div class="grid gap-4 py-4">
                     <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-500">Zona</span>
+                        <span class="font-semibold text-amber-700" x-text="zoneLabel(zone)"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-gray-500">Total Items</span>
                         <span class="font-semibold" x-text="cart.reduce((sum, item) => sum + parseInt(item.quantity), 0)"></span>
                     </div>
@@ -744,14 +751,6 @@
                         <span class="text-lg font-bold text-blue-600" x-text="formatCurrency(total)"></span>
                     </div>
 
-                    <div class="flex items-center justify-between border-t border-gray-100 pt-2 mt-2" x-show="payment.method === 'cash'">
-                        <span class="text-sm font-medium text-gray-500">Cash Received</span>
-                        <span class="font-semibold" x-text="formatCurrency(payment.cash_received)"></span>
-                    </div>
-                    <div class="flex items-center justify-between" x-show="payment.method === 'cash'">
-                        <span class="text-sm font-medium text-gray-500">Change</span>
-                        <span class="font-bold text-green-600" x-text="formatCurrency(change)"></span>
-                    </div>
                 </div>
 
                 <!-- Actions -->
