@@ -78,6 +78,27 @@
                             </x-slot>
                         </x-nav-dropdown>
 
+                        <!-- Reports Dropdown -->
+                        <x-nav-dropdown active="{{ request()->routeIs('reports.*') }}">
+                            <x-slot name="icon">
+                                <x-heroicon-o-chart-bar class="mr-2 h-4 w-4" />
+                            </x-slot>
+                            <x-slot name="trigger">
+                                Reports
+                            </x-slot>
+                            <x-slot name="content">
+                                <x-dropdown-link :href="route('reports.customers')" :active="request()->routeIs('reports.customers')">
+                                    Customer Report
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('reports.products')" :active="request()->routeIs('reports.products')">
+                                    Product Report
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('reports.customer-nominal')" :active="request()->routeIs('reports.customer-nominal')">
+                                    Customer Nominal
+                                </x-dropdown-link>
+                            </x-slot>
+                        </x-nav-dropdown>
+
                         <!-- Users Link -->
                         <a href="{{ route('users.index') }}" class="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 {{ request()->routeIs('users.*') ? 'bg-accent/50 text-accent-foreground' : 'bg-background' }}">
                             <x-heroicon-o-users class="mr-2 h-4 w-4" />
@@ -233,6 +254,21 @@
                                 <div class="mt-2 flex flex-col gap-2 pl-4 border-l border-border ml-2">
                                     <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('finance.transactions.index') ? 'text-primary' : '' }}" href="{{ route('finance.transactions.index') }}">Transactions</a>
                                     <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('finance.categories.index') ? 'text-primary' : '' }}" href="{{ route('finance.categories.index') }}">Categories</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Reports Accordion -->
+                        <div x-data="{ expanded: {{ request()->routeIs(['reports.*']) ? 'true' : 'false' }} }" class="border-b-0">
+                            <button @click="expanded = !expanded" class="flex flex-1 items-center justify-between py-0 font-semibold transition-all hover:underline w-full text-left text-md {{ request()->routeIs(['reports.*']) ? 'text-primary' : '' }}">
+                                Reports
+                                <x-heroicon-o-chevron-down :class="{'rotate-180': expanded}" class="h-4 w-4 shrink-0 transition-transform duration-200" />
+                            </button>
+                            <div x-show="expanded" x-collapse>
+                                <div class="mt-2 flex flex-col gap-2 pl-4 border-l border-border ml-2">
+                                    <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('reports.customers') ? 'text-primary' : '' }}" href="{{ route('reports.customers') }}">Customer Report</a>
+                                    <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('reports.products') ? 'text-primary' : '' }}" href="{{ route('reports.products') }}">Product Report</a>
+                                    <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('reports.customer-nominal') ? 'text-primary' : '' }}" href="{{ route('reports.customer-nominal') }}">Customer Nominal</a>
                                 </div>
                             </div>
                         </div>
