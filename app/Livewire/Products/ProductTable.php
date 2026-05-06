@@ -75,13 +75,16 @@ final class ProductTable extends PowerGridComponent
             ->add('purchase_price_formatted', fn(Product $model) => format_money($model->purchase_price))
             ->add('selling_price_formatted', fn(Product $model) => format_money($model->selling_price))
             ->add('margin_formatted', function(Product $model) {
-                // Calculate margin
                 $margin = $model->selling_price - $model->purchase_price;
                 $percentage = $model->purchase_price > 0 ? ($margin / $model->purchase_price) * 100 : 0;
 
-                // Format with percentage
-                return format_money($margin) .
-                    ' <span class="text-xs text-gray-500">(' . round($percentage, 1) . '%)</span>';
+                $badgeClass = $margin >= 0
+                    ? 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800'
+                    : 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800';
+
+                return '<span class="' . $badgeClass . '">' .
+                    format_money($margin) . ' (' . round($percentage, 1) . '%)' .
+                    '</span>';
             })
             ->add('quantity')
             ->add('min_stock')
@@ -138,7 +141,7 @@ final class ProductTable extends PowerGridComponent
                 ->bodyAttribute('text-right'),
 
             Column::make('Margin', 'margin_formatted')
-                ->bodyAttribute('text-right text-indigo-600')
+                ->bodyAttribute('text-right')
                 ->visibleInExport(false),
 
             Column::make('Qty', 'quantity')

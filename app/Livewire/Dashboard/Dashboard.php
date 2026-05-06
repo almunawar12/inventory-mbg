@@ -69,11 +69,21 @@ class Dashboard extends Component
         $this->dispatch('stock-compare-updated', $this->stockCompareChart);
     }
 
+    public function refresh()
+    {
+        $service = app(DashboardStatsService::class);
+        [$startDate, $endDate] = $this->getDateRange();
+        $service->clearCache($startDate, $endDate, $this->dateFilter);
+        $this->loadStats($service);
+    }
+
     public function updatedDateFilter()
     {
-        // If Custom is selected, we wait for dates.
         if ($this->dateFilter !== DatePeriod::CUSTOM->value) {
-            $this->loadStats(app(DashboardStatsService::class));
+            $service = app(DashboardStatsService::class);
+            [$startDate, $endDate] = $this->getDateRange();
+            $service->clearCache($startDate, $endDate, $this->dateFilter);
+            $this->loadStats($service);
         }
     }
 
@@ -122,11 +132,13 @@ class Dashboard extends Component
         $this->topCustomers = $service->getTopCustomers($startDate, $endDate, 5);
 
         // 4. Prepare Chart Data
-        $salesTrend = $service->getSalesTrend($startDate, $endDate);
+        $hourly = in_array($this->dateFilter, [DatePeriod::TODAY->value, DatePeriod::YESTERDAY->value]);
+        $salesTrend = $service->getSalesTrend($startDate, $endDate, $hourly);
 
         $this->salesChart = [
             'labels' => array_keys($salesTrend),
             'data' => array_values($salesTrend),
+            'hourly' => $hourly,
         ];
 
         $cashFlowTrend = $service->getCashFlowTrend($startDate, $endDate);
@@ -152,19 +164,19 @@ class Dashboard extends Component
 
     protected function getDateRange(): array
     {
-        $now = Carbon::now();
+        $now = Carbon::now('Asia/Jakarta');
 
         return match(DatePeriod::tryFrom($this->dateFilter)) {
-            DatePeriod::TODAY => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
-            DatePeriod::YESTERDAY => [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay()],
-            DatePeriod::THIS_WEEK => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
-            DatePeriod::THIS_MONTH => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
-            DatePeriod::LAST_MONTH => [$now->copy()->subMonth()->startOfMonth(), $now->copy()->subMonth()->endOfMonth()],
+            DatePeriod::TODAY => [$now->copy()->startOfDay()->utc(), $now->copy()->endOfDay()->utc()],
+            DatePeriod::YESTERDAY => [$now->copy()->subDay()->startOfDay()->utc(), $now->copy()->subDay()->endOfDay()->utc()],
+            DatePeriod::THIS_WEEK => [$now->copy()->startOfWeek()->utc(), $now->copy()->endOfWeek()->utc()],
+            DatePeriod::THIS_MONTH => [$now->copy()->startOfMonth()->utc(), $now->copy()->endOfMonth()->utc()],
+            DatePeriod::LAST_MONTH => [$now->copy()->subMonth()->startOfMonth()->utc(), $now->copy()->subMonth()->endOfMonth()->utc()],
             DatePeriod::CUSTOM => [
-                Carbon::parse($this->customStartDate)->startOfDay(),
-                Carbon::parse($this->customEndDate)->endOfDay()
+                Carbon::parse($this->customStartDate, 'Asia/Jakarta')->startOfDay()->utc(),
+                Carbon::parse($this->customEndDate, 'Asia/Jakarta')->endOfDay()->utc()
             ],
-            default => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
+            default => [$now->copy()->startOfDay()->utc(), $now->copy()->endOfDay()->utc()],
         };
     }
 

@@ -14,6 +14,24 @@ use Illuminate\Support\Facades\Cache;
 
 class DashboardStatsService
 {
+    public function clearCache(Carbon $startDate, Carbon $endDate, string $periodKey): void
+    {
+        $s = $startDate->format('Ymd');
+        $e = $endDate->format('Ymd');
+
+        Cache::forget("dashboard_sales_{$periodKey}_{$s}_{$e}");
+        Cache::forget("dashboard_cashflow_{$periodKey}_{$s}_{$e}");
+        Cache::forget("dashboard_sales_trend_{$s}_{$e}");
+        Cache::forget("dashboard_sales_trend_{$s}_{$e}_hourly");
+        Cache::forget("dashboard_cashflow_trend_{$s}_{$e}");
+        Cache::forget("dashboard_expense_breakdown_{$s}_{$e}");
+        Cache::forget("dashboard_top_products_{$s}_{$e}");
+        Cache::forget("dashboard_top_customers_{$s}_{$e}");
+        Cache::forget('dashboard_low_stock');
+        Cache::forget('dashboard_stock');
+        Cache::forget('dashboard_recent_sales');
+    }
+
     /**
      * Get Sales Statistics (Total Revenue, Net Profit, Count)
      */
@@ -165,14 +183,30 @@ class DashboardStatsService
         });
     }
 
-    /**
-     * Get Sales Chart Data (Daily Trend)
-     */
-    public function getSalesTrend(Carbon $startDate, Carbon $endDate): array
+    public function getSalesTrend(Carbon $startDate, Carbon $endDate, bool $hourly = false): array
     {
-         $cacheKey = "dashboard_sales_trend_{$startDate->format('Ymd')}_{$endDate->format('Ymd')}";
+        $cacheKey = "dashboard_sales_trend_{$startDate->format('Ymd')}_{$endDate->format('Ymd')}" . ($hourly ? '_hourly' : '');
 
-         return Cache::remember($cacheKey, now()->addMinutes(30), function () use ($startDate, $endDate) {
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($startDate, $endDate, $hourly) {
+            if ($hourly) {
+                $data = Sale::selectRaw("HOUR(CONVERT_TZ(sale_date, '+00:00', '+07:00')) as hour, SUM(total) as total")
+                    ->whereBetween('sale_date', [$startDate, $endDate])
+                    ->where('status', 'completed')
+                    ->groupBy('hour')
+                    ->orderBy('hour')
+                    ->get()
+                    ->pluck('total', 'hour')
+                    ->toArray();
+
+                $chartData = [];
+                for ($h = 0; $h <= 23; $h++) {
+                    $label = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00';
+                    $chartData[$label] = (float) ($data[$h] ?? 0);
+                }
+
+                return $chartData;
+            }
+
             $data = Sale::selectRaw('DATE(sale_date) as date, SUM(total) as total')
                 ->whereBetween('sale_date', [$startDate, $endDate])
                 ->where('status', 'completed')
@@ -182,17 +216,16 @@ class DashboardStatsService
                 ->pluck('total', 'date')
                 ->toArray();
 
-            // Fill missing dates with 0
             $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
             $chartData = [];
 
             foreach ($period as $date) {
                 $formattedDate = $date->format('Y-m-d');
-                $chartData[$formattedDate] = $data[$formattedDate] ?? 0;
+                $chartData[$formattedDate] = (float) ($data[$formattedDate] ?? 0);
             }
 
             return $chartData;
-         });
+        });
     }
 
      

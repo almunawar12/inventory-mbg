@@ -39,7 +39,7 @@
             </div>
 
              <!-- Refresh Button -->
-             <button wire:click="$refresh" class="print:hidden inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 w-9">
+             <button wire:click="refresh" class="print:hidden inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 w-9">
                 <x-heroicon-o-arrow-path wire:loading.class="animate-spin" class="h-4 w-4" />
             </button>
             
@@ -365,20 +365,15 @@
                     categories: data.sales.labels,
                     axisBorder: { show: false },
                     axisTicks: { show: false },
+                    tickAmount: data.sales.hourly ? 12 : undefined,
                     labels: {
+                        rotate: data.sales.hourly ? -45 : 0,
                         style: { cssClass: 'text-[10px] text-muted-foreground' }
                     }
                 },
                 yaxis: {
                     labels: {
                         style: { cssClass: 'text-[10px] text-muted-foreground' }
-                    }
-                },
-                tooltip: {
-                    y: {
-                        formatter: function (val) {
-                             return formatMoney(val);
-                        }
                     }
                 },
                 fill: {
@@ -390,7 +385,7 @@
                         stops: [0, 90, 100]
                     }
                 },
-                colors: ['#0ea5e9'], // Sky 500
+                colors: ['#0ea5e9'],
                 tooltip: {
                     y: {
                         formatter: function (val) {
