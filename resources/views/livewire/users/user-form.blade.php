@@ -41,6 +41,17 @@
                 placeholder="email@example.com"
             />
 
+            <!-- Role -->
+            <div class="space-y-2">
+                <x-input-label for="role" :value="__('Role')" />
+                <select id="role" name="role" wire:model="role"
+                        class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block w-full">
+                    <option value="super_admin">Super Admin</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <x-input-error :messages="$errors->get('role')" />
+            </div>
+
             <!-- Password -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-2">
@@ -72,7 +83,7 @@
 
             <!-- Actions -->
             <div class="mt-6 flex justify-end gap-3 border-t border-gray-200 pt-4">
-                <x-secondary-button type="button" x-on:click="$dispatch('close-modal', { name: 'user-form-modal' })">
+                <x-secondary-button type="button" x-on:click="$dispatch('close-modal', { name: 'user-form-modal' }); Livewire.dispatch('reset-user-form');">
                     {{ __('Cancel') }}
                 </x-secondary-button>
 

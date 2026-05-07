@@ -19,6 +19,7 @@ class UserForm extends Component
     public $email;
     public $password;
     public $password_confirmation;
+    public $role = 'admin';
 
     public function rules(): array
     {
@@ -27,26 +28,28 @@ class UserForm extends Component
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($this->user?->id)],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user?->id)],
             'password' => [$this->isEditing ? 'nullable' : 'required', 'string', 'min:8', 'confirmed'],
+            'role' => ['required', 'in:super_admin,admin'],
         ];
     }
 
-    #[On('open-modal')]
-    public function handleOpenModal($name): void
-    {
-        if ($name === 'user-form-modal' && !$this->isEditing) {
-            $this->create(); // Ensure we reset if opening for create
-        }
-    }
-
+    #[On('create-user')]
     public function create(): void
     {
-        $this->reset(['user', 'isEditing', 'name', 'username', 'email', 'password', 'password_confirmation']);
-        $this->dispatch('open-modal', name: 'user-form-modal');
+        $this->reset(['user', 'isEditing', 'name', 'username', 'email', 'password', 'password_confirmation', 'role']);
+        $this->resetValidation();
+    }
+
+    #[On('reset-user-form')]
+    public function resetForm(): void
+    {
+        $this->reset(['user', 'isEditing', 'name', 'username', 'email', 'password', 'password_confirmation', 'role']);
+        $this->resetValidation();
     }
 
     #[On('edit-user')]
     public function edit(User $user): void
     {
+        $this->resetValidation();
         $this->user = $user;
         $this->isEditing = true;
 
@@ -55,6 +58,7 @@ class UserForm extends Component
         $this->email = $user->email;
         $this->password = '';
         $this->password_confirmation = '';
+        $this->role = $user->role ?? 'admin';
 
         $this->dispatch('open-modal', name: 'user-form-modal');
     }
@@ -68,6 +72,7 @@ class UserForm extends Component
             username: $this->username,
             email: $this->email,
             password: $this->password ?: null, // Pass null if empty in edit mode
+            role: $this->role,
         );
 
         try {
@@ -84,7 +89,7 @@ class UserForm extends Component
             $this->dispatch('toast', message: $message, type: 'success');
 
             // Reset after save
-            $this->reset(['user', 'isEditing', 'name', 'username', 'email', 'password', 'password_confirmation']);
+            $this->reset(['user', 'isEditing', 'name', 'username', 'email', 'password', 'password_confirmation', 'role']);
 
         } catch (\Exception $e) {
             $this->dispatch('toast', message: 'Error: ' . $e->getMessage(), type: 'error');

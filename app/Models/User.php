@@ -26,7 +26,21 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
+        'role',
     ];
+
+    public const ROLE_SUPER_ADMIN = 'super_admin';
+    public const ROLE_ADMIN = 'admin';
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
 
     /**
      * The attributes that should be hidden for serialization.

@@ -50,6 +50,7 @@ final class UserTable extends PowerGridComponent
             ->add('name')
             ->add('username')
             ->add('email')
+            ->add('role_formatted', fn (User $model) => $model->role === 'super_admin' ? 'Super Admin' : 'Admin')
             ->add('created_at_formatted', fn (User $model) => Carbon::parse($model->created_at)->format('d/m/Y H:i'));
     }
 
@@ -70,6 +71,9 @@ final class UserTable extends PowerGridComponent
 
             Column::make('Email', 'email')
                 ->searchable()
+                ->sortable(),
+
+            Column::make('Role', 'role_formatted', 'role')
                 ->sortable(),
 
             Column::make('Created At', 'created_at_formatted', 'created_at')

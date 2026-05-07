@@ -7,7 +7,10 @@
             <x-primary-button
                 type="button"
                 x-data="{}"
-                @click.prevent="$dispatch('open-modal', { name: 'user-form-modal' })"
+                @click.prevent="
+                    Livewire.dispatch('create-user');
+                    $dispatch('open-modal', { name: 'user-form-modal' });
+                "
             >
                 <x-heroicon-o-plus class="w-4 h-4 mr-2" />
                 {{ __('Create User') }}

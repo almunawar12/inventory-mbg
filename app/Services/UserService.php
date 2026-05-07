@@ -22,6 +22,7 @@ class UserService
                 'username' => $data->username,
                 'email' => $data->email,
                 'password' => Hash::make($data->password),
+                'role' => $data->role,
             ]);
 
             Cache::forget('users_list_all');
@@ -37,6 +38,7 @@ class UserService
                 'name' => $data->name,
                 'username' => $data->username,
                 'email' => $data->email,
+                'role' => $data->role,
             ];
 
             if ($data->password) {

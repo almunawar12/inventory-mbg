@@ -42,6 +42,7 @@
                             </x-slot>
                         </x-nav-dropdown>
 
+                        @if(auth()->user()->isSuperAdmin())
                         <!-- Purchases Dropdown -->
                         <x-nav-dropdown active="{{ request()->routeIs(['purchases.*', 'suppliers.*']) }}">
                             <x-slot name="icon">
@@ -125,6 +126,7 @@
                                 </x-dropdown-link>
                             </x-slot>
                         </x-nav-dropdown>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -144,9 +146,11 @@
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
+                        @if(auth()->user()->isSuperAdmin())
                         <x-dropdown-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                             {{ __('Settings') }}
                         </x-dropdown-link>
+                        @endif
 
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
@@ -230,6 +234,7 @@
                             </div>
                         </div>
 
+                        @if(auth()->user()->isSuperAdmin())
                         <!-- Mobile Purchases Accordion -->
                         <div x-data="{ expanded: {{ request()->routeIs(['purchases.*', 'suppliers.*']) ? 'true' : 'false' }} }" class="border-b-0">
                             <button @click="expanded = !expanded" class="flex flex-1 items-center justify-between py-0 font-semibold transition-all hover:underline [&[data-state=open]>svg]:rotate-180 w-full text-left text-md {{ request()->routeIs(['purchases.*', 'suppliers.*']) ? 'text-primary' : '' }}">
@@ -290,6 +295,7 @@
                                 </div>
                             </div>
                         </div>
+                        @endif
 
 
                     <!-- Mobile User Menu -->
@@ -299,9 +305,11 @@
                                 <a href="{{ route('profile.index') }}" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input h-9 px-4 py-2 w-full {{ request()->routeIs('profile.*') ? 'bg-accent text-accent-foreground' : 'bg-background hover:bg-accent hover:text-accent-foreground' }}">
                                     Profile
                                 </a>
+                                @if(auth()->user()->isSuperAdmin())
                                 <a href="{{ route('settings.index') }}" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input h-9 px-4 py-2 w-full {{ request()->routeIs('settings.*') ? 'bg-accent text-accent-foreground' : 'bg-background hover:bg-accent hover:text-accent-foreground' }}">
                                     Settings
                                 </a>
+                                @endif
                                 <form method="POST" action="{{ route('logout') }}" class="w-full">
                                     @csrf
                                     <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 w-full">
