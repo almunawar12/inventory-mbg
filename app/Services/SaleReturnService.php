@@ -125,8 +125,41 @@ class SaleReturnService
 
     public function deleteReturn(SaleReturn $return): void
     {
-        // Implemented in Task 8.
-        throw new \LogicException('Not implemented');
+        DB::transaction(function () use ($return) {
+            $return->loadMissing('items.product');
+
+            // Lock products
+            $productIds = $return->items->pluck('product_id')->unique()->all();
+            $products = Product::whereIn('id', $productIds)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            foreach ($return->items as $item) {
+                /** @var Product|null $product */
+                $product = $products->get($item->product_id);
+                if (!$product) {
+                    throw SaleReturnException::productNotFound($item->product_id);
+                }
+                if ($product->quantity < $item->quantity) {
+                    throw SaleReturnException::cannotReverseStock(
+                        $product->name,
+                        $item->quantity,
+                        (int) $product->quantity
+                    );
+                }
+            }
+
+            // Decrement after all guards pass
+            foreach ($return->items as $item) {
+                $products[$item->product_id]->decrement('quantity', $item->quantity);
+            }
+
+            $this->financeService->voidTransaction($return);
+
+            $return->items()->delete();
+            $return->delete();
+        });
     }
 
     private function generateReturnNumber(): string
