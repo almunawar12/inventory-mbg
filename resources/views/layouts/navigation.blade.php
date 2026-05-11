@@ -22,7 +22,7 @@
                         </a>
 
                         <!-- Sales Dropdown -->
-                        <x-nav-dropdown active="{{ request()->routeIs(['sales.*', 'customers.*']) }}">
+                        <x-nav-dropdown active="{{ request()->routeIs(['sales.*', 'customers.*', 'sale-returns.*']) }}">
                             <x-slot name="icon">
                                 <x-heroicon-o-banknotes class="mr-2 h-4 w-4" />
                             </x-slot>
@@ -39,6 +39,11 @@
                                 <x-dropdown-link :href="route('customers.index')" :active="request()->routeIs('customers.*')">
                                     Customers
                                 </x-dropdown-link>
+                                @if(auth()->user()->isSuperAdmin())
+                                    <x-dropdown-link :href="route('sale-returns.index')" :active="request()->routeIs('sale-returns.*')">
+                                        Returns
+                                    </x-dropdown-link>
+                                @endif
                             </x-slot>
                         </x-nav-dropdown>
 
@@ -220,8 +225,8 @@
                         <a href="{{ route('dashboard') }}" class="text-md font-semibold hover:underline {{ request()->routeIs('dashboard') ? 'text-primary' : '' }}">Dashboard</a>
 
                         <!-- Mobile Sales Accordion -->
-                        <div x-data="{ expanded: {{ request()->routeIs(['sales.*', 'customers.*']) ? 'true' : 'false' }} }" class="border-b-0">
-                            <button @click="expanded = !expanded" class="flex flex-1 items-center justify-between py-0 font-semibold transition-all hover:underline [&[data-state=open]>svg]:rotate-180 w-full text-left text-md {{ request()->routeIs(['sales.*', 'customers.*']) ? 'text-primary' : '' }}">
+                        <div x-data="{ expanded: {{ request()->routeIs(['sales.*', 'customers.*', 'sale-returns.*']) ? 'true' : 'false' }} }" class="border-b-0">
+                            <button @click="expanded = !expanded" class="flex flex-1 items-center justify-between py-0 font-semibold transition-all hover:underline [&[data-state=open]>svg]:rotate-180 w-full text-left text-md {{ request()->routeIs(['sales.*', 'customers.*', 'sale-returns.*']) ? 'text-primary' : '' }}">
                                 Sales
                                 <x-heroicon-o-chevron-down :class="{'rotate-180': expanded}" class="h-4 w-4 shrink-0 transition-transform duration-200" />
                             </button>
@@ -230,6 +235,9 @@
                                     <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs(['sales.index', 'sales.show']) ? 'text-primary' : '' }}" href="{{ route('sales.index') }}">Sales</a>
                                     <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('sales.create') ? 'text-primary' : '' }}" href="{{ route('sales.create') }}">POS</a>
                                     <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('customers.index') ? 'text-primary' : '' }}" href="{{ route('customers.index') }}">Customers</a>
+                                    @if(auth()->user()->isSuperAdmin())
+                                        <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('sale-returns.*') ? 'text-primary' : '' }}" href="{{ route('sale-returns.index') }}">Returns</a>
+                                    @endif
                                 </div>
                             </div>
                         </div>

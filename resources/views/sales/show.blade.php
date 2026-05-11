@@ -8,6 +8,13 @@
                 <x-secondary-button href="{{ route('sales.index') }}">
                     &larr; {{ __('Back to List') }}
                 </x-secondary-button>
+                @if($sale->status === \App\Enums\SaleStatus::COMPLETED && auth()->user()?->isSuperAdmin())
+                    <a href="{{ route('sale-returns.create', ['sale_id' => $sale->id]) }}"
+                       class="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md">
+                        <x-heroicon-o-arrow-uturn-left class="w-4 h-4 mr-2" />
+                        {{ __('Retur') }}
+                    </a>
+                @endif
                 <x-primary-button href="{{ route('sales.print', $sale) }}" target="_blank">
                     <x-heroicon-o-printer class="w-4 h-4 mr-2" />
                     {{ __('Print Invoice') }}
