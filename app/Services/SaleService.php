@@ -161,6 +161,10 @@ class SaleService
     {
         return DB::transaction(function () use ($sale, $reason) {
             try {
+                if ($sale->returns()->exists()) {
+                    throw SaleException::hasReturns($sale->id);
+                }
+
                 if ($sale->status === SaleStatus::CANCELLED) {
                     throw SaleException::invalidStatus('cancel', $sale->status->label(), ['id' => $sale->id]);
                 }

@@ -65,4 +65,11 @@ class SaleException extends Exception
         Log::warning($message);
         return new self("Payment is insufficient. Please collect the full amount.");
     }
+
+    public static function hasReturns(int $saleId): self
+    {
+        $message = "Cannot cancel sale #{$saleId}: it has related returns. Delete the returns first.";
+        Log::warning($message);
+        return new self($message);
+    }
 }
