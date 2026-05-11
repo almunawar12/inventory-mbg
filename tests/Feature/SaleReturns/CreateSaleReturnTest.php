@@ -39,7 +39,7 @@ class CreateSaleReturnTest extends TestCase
         ]);
 
         $sale = Sale::create([
-            'invoice_number'  => 'INV.260511.0001',
+            'invoice_number'  => 'INV.260511.' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT),
             'customer_id'     => null,
             'created_by'      => $user->id,
             'sale_date'       => now(),
@@ -104,5 +104,60 @@ class CreateSaleReturnTest extends TestCase
             'amount'         => 20000,
         ]);
         $this->assertMatchesRegularExpression('/^RET\.\d{6}\.\d{4}$/', $return->return_number);
+    }
+
+    public function test_cannot_return_pending_sale(): void
+    {
+        ['user' => $user, 'sale' => $sale, 'item' => $item] = $this->makeSaleWithItem();
+        $sale->update(['status' => SaleStatus::PENDING]);
+
+        $this->expectException(SaleReturnException::class);
+        $this->expectExceptionMessageMatches('/not eligible for return/');
+
+        app(SaleReturnService::class)->createReturn(SaleReturnData::fromArray([
+            'sale_id'     => $sale->id,
+            'created_by'  => $user->id,
+            'return_date' => now()->toDateTimeString(),
+            'items'       => [['sale_item_id' => $item->id, 'quantity' => 1]],
+        ]));
+    }
+
+    public function test_second_return_cannot_exceed_available_qty(): void
+    {
+        ['user' => $user, 'sale' => $sale, 'item' => $item, 'product' => $product] = $this->makeSaleWithItem(qty: 3);
+
+        // First return: 2 of 3
+        app(SaleReturnService::class)->createReturn(SaleReturnData::fromArray([
+            'sale_id'     => $sale->id,
+            'created_by'  => $user->id,
+            'return_date' => now()->toDateTimeString(),
+            'items'       => [['sale_item_id' => $item->id, 'quantity' => 2]],
+        ]));
+
+        $this->expectException(SaleReturnException::class);
+        $this->expectExceptionMessageMatches('/Only 1 remaining/');
+
+        app(SaleReturnService::class)->createReturn(SaleReturnData::fromArray([
+            'sale_id'     => $sale->id,
+            'created_by'  => $user->id,
+            'return_date' => now()->toDateTimeString(),
+            'items'       => [['sale_item_id' => $item->id, 'quantity' => 2]],
+        ]));
+    }
+
+    public function test_sale_item_mismatch_rejected(): void
+    {
+        $a = $this->makeSaleWithItem();
+        $b = $this->makeSaleWithItem();
+
+        $this->expectException(SaleReturnException::class);
+        $this->expectExceptionMessageMatches('/does not belong to sale/');
+
+        app(SaleReturnService::class)->createReturn(SaleReturnData::fromArray([
+            'sale_id'     => $a['sale']->id,
+            'created_by'  => $a['user']->id,
+            'return_date' => now()->toDateTimeString(),
+            'items'       => [['sale_item_id' => $b['item']->id, 'quantity' => 1]],
+        ]));
     }
 }
