@@ -44,6 +44,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('super_admin')->name('users.search');
         Route::post('finance-categories', [\App\Http\Controllers\Api\FinanceCategoryController::class, 'search'])
             ->middleware('super_admin')->name('finance-categories.search');
+        Route::post('sales/lookup', [\App\Http\Controllers\Api\SaleController::class, 'lookup'])
+            ->middleware('super_admin')->name('sales.lookup');
     });
 
     // =========================================================================
@@ -86,6 +88,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('products', ProductReport::class)->name('products');
             Route::get('customer-nominal', CustomerNominalReport::class)->name('customer-nominal');
         });
+
+        // Sale Returns
+        Route::resource('sale-returns', \App\Http\Controllers\SaleReturnController::class)
+            ->except(['edit', 'update']);
+        Route::get('sale-returns/{saleReturn}/print', [\App\Http\Controllers\SaleReturnController::class, 'print'])
+            ->name('sale-returns.print');
 
         // Settings & Users
         Route::view('users', 'users.index')->name('users.index');
