@@ -64,6 +64,32 @@ class FinanceTransactionService
     }
 
     /**
+     * Record refund expense from a sale return.
+     */
+    public function recordExpenseFromReturn(\App\Models\SaleReturn $return): void
+    {
+        $category = $this->getOrCreateCategory('Sales Refund', FinanceCategoryType::Expense);
+
+        $return->loadMissing('sale');
+
+        FinanceTransaction::updateOrCreate(
+            [
+                'reference_type' => \App\Models\SaleReturn::class,
+                'reference_id'   => $return->id,
+            ],
+            [
+                'code'                => $this->generateTransactionCode('REF'),
+                'transaction_date'    => $return->return_date,
+                'finance_category_id' => $category->id,
+                'amount'              => $return->total_refund,
+                'description'         => 'Refund Ret: ' . $return->return_number . ' - Inv ' . ($return->sale->invoice_number ?? '-'),
+                'external_reference'  => $return->return_number,
+                'created_by'          => $return->created_by ?? Auth::id() ?? 1,
+            ]
+        );
+    }
+
+    /**
      * Void (delete) a transaction when the source is cancelled or deleted.
      */
     public function voidTransaction($model): void
@@ -129,7 +155,7 @@ class FinanceTransactionService
             throw new FinanceTransactionException('Cannot delete system-generated transaction (Sales/Purchases). Please void the source instead.');
         }
 
-        if ($transaction->category && in_array($transaction->category->name, ['Product Sales', 'Product Purchases'])) {
+        if ($transaction->category && in_array($transaction->category->name, ['Product Sales', 'Product Purchases', 'Sales Refund'])) {
             throw new FinanceTransactionException('Cannot delete transactions belonging to protected categories (Product Sales/Product Purchases).');
         }
 
