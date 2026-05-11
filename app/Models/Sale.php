@@ -58,4 +58,9 @@ class Sale extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(SaleReturn::class);
+    }
 }
