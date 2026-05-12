@@ -91,6 +91,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Sale Returns
         Route::resource('sale-returns', \App\Http\Controllers\SaleReturnController::class)
+            ->parameters(['sale-returns' => 'saleReturn'])
             ->except(['edit', 'update']);
         Route::get('sale-returns/{saleReturn}/print', [\App\Http\Controllers\SaleReturnController::class, 'print'])
             ->name('sale-returns.print');
