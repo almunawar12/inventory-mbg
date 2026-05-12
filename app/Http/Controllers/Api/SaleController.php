@@ -25,8 +25,15 @@ class SaleController extends Controller
             ], 404);
         }
 
-        $items = $sale->items->map(function ($item) {
-            $alreadyReturned = (int) \App\Models\SaleReturnItem::where('sale_item_id', $item->id)->sum('quantity');
+        $alreadyReturnedMap = \App\Models\SaleReturnItem::query()
+            ->whereIn('sale_item_id', $sale->items->pluck('id'))
+            ->selectRaw('sale_item_id, SUM(quantity) as total')
+            ->groupBy('sale_item_id')
+            ->pluck('total', 'sale_item_id')
+            ->toArray();
+
+        $items = $sale->items->map(function ($item) use ($alreadyReturnedMap) {
+            $alreadyReturned = (int) ($alreadyReturnedMap[$item->id] ?? 0);
             return [
                 'sale_item_id'     => $item->id,
                 'product_id'       => $item->product_id,

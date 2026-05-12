@@ -1,3 +1,14 @@
+@php
+    $alreadyReturnedMap = [];
+    if ($sale) {
+        $alreadyReturnedMap = \App\Models\SaleReturnItem::query()
+            ->whereIn('sale_item_id', $sale->items->pluck('id'))
+            ->selectRaw('sale_item_id, SUM(quantity) as total')
+            ->groupBy('sale_item_id')
+            ->pluck('total', 'sale_item_id')
+            ->toArray();
+    }
+@endphp
 <x-app-layout title="New Return">
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-foreground leading-tight">{{ __('New Return') }}</h2>
@@ -116,8 +127,8 @@
                     'customer' => $sale->customer?->name ?? 'Guest',
                     'total' => $sale->total,
                 ] : null),
-                items: @json($sale ? $sale->items->map(function ($item) {
-                    $alreadyReturned = (int) \App\Models\SaleReturnItem::where('sale_item_id', $item->id)->sum('quantity');
+                items: @json($sale ? $sale->items->map(function ($item) use ($alreadyReturnedMap) {
+                    $alreadyReturned = (int) ($alreadyReturnedMap[$item->id] ?? 0);
                     return [
                         'sale_item_id'     => $item->id,
                         'product_name'     => $item->product?->name,

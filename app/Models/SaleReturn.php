@@ -23,7 +23,6 @@ class SaleReturn extends Model
 
     protected $casts = [
         'return_date'  => 'datetime',
-        'total_refund' => 'integer',
     ];
 
     public function sale(): BelongsTo
