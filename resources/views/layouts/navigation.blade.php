@@ -102,6 +102,9 @@
                                 <x-dropdown-link :href="route('reports.customer-nominal')" :active="request()->routeIs('reports.customer-nominal')">
                                     Customer Nominal
                                 </x-dropdown-link>
+                                <x-dropdown-link :href="route('reports.stock-movements')" :active="request()->routeIs('reports.stock-movements*')">
+                                    Riwayat Stok
+                                </x-dropdown-link>
                             </x-slot>
                         </x-nav-dropdown>
 
@@ -282,6 +285,7 @@
                                     <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('reports.customers') ? 'text-primary' : '' }}" href="{{ route('reports.customers') }}">Customer Report</a>
                                     <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('reports.products') ? 'text-primary' : '' }}" href="{{ route('reports.products') }}">Product Report</a>
                                     <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('reports.customer-nominal') ? 'text-primary' : '' }}" href="{{ route('reports.customer-nominal') }}">Customer Nominal</a>
+                                    <a class="text-sm font-medium hover:underline py-1 {{ request()->routeIs('reports.stock-movements*') ? 'text-primary' : '' }}" href="{{ route('reports.stock-movements') }}">Riwayat Stok</a>
                                 </div>
                             </div>
                         </div>
