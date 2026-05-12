@@ -87,6 +87,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('customers', CustomerReport::class)->name('customers');
             Route::get('products', ProductReport::class)->name('products');
             Route::get('customer-nominal', CustomerNominalReport::class)->name('customer-nominal');
+            Route::get('stock-movements', \App\Livewire\Reports\StockMovementReport::class)
+                ->name('stock-movements');
+            Route::get('stock-movements/products/{product}', \App\Livewire\Reports\ProductStockCard::class)
+                ->name('stock-movements.product');
         });
 
         // Sale Returns
