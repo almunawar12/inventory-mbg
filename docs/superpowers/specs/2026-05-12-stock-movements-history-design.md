@@ -30,11 +30,11 @@ Provide an admin-facing view of inventory stock movements (incoming and outgoing
 
 No schema changes. Three logical movement sources are unioned at query time:
 
-| Source           | Table(s)                                    | Filter                                | Type | Date column           |
-|------------------|---------------------------------------------|---------------------------------------|------|------------------------|
-| Purchase received| `purchase_items` JOIN `purchases`           | `purchases.received_at IS NOT NULL`   | IN   | `purchases.received_at`|
-| Sale completed   | `sale_items` JOIN `sales`                   | `sales.status = 'completed'`          | OUT  | `sales.completed_at`   |
-| Sale return      | `sale_return_items` JOIN `sale_returns`     | (all return rows; tighten if status column exists) | IN | `sale_returns.return_date` (or equivalent) |
+| Source           | Table(s)                                    | Filter                                                | Type | Date column           |
+|------------------|---------------------------------------------|-------------------------------------------------------|------|------------------------|
+| Purchase received| `purchase_items` JOIN `purchases`           | `purchases.status IN ('received','paid')`             | IN   | `purchases.purchase_date` |
+| Sale completed   | `sale_items` JOIN `sales`                   | `sales.status = 'completed'`                          | OUT  | `sales.sale_date`         |
+| Sale return      | `sale_return_items` JOIN `sale_returns`     | (all return rows; no status column on `sale_returns`) | IN   | `sale_returns.return_date`|
 
 **Unified row shape** (output of the service):
 
@@ -162,9 +162,9 @@ Add entry to sidebar Reports group: "Riwayat Stok" → `reports.stock-movements`
 
 ## 5. Edge Cases
 
-- **Purchase not yet received** (`received_at IS NULL`) — excluded.
-- **Sale not completed** (`status != 'completed'` or `completed_at IS NULL`) — excluded.
-- **Sale return without a status column** — include all; if a status column exists, restrict to settled returns.
+- **Purchase not yet received** (`status NOT IN ('received','paid')`) — excluded.
+- **Sale not completed** (`status != 'completed'`) — excluded.
+- **Sale returns** have no status column — all rows included.
 - **Deleted product** — if `products` row is hard-deleted, the JOIN drops the row. Use a LEFT JOIN and fall back to snapshot fields on `*_items` (SKU/name) if present; otherwise show "(produk dihapus)". Confirm during implementation which columns `purchase_items` / `sale_items` / `sale_return_items` snapshot.
 - **Same-second timestamps** — secondary sort by `source`, then `reference_id`, then item PK to keep ordering stable.
 - **Timezone** — store/query in UTC; render in `Asia/Jakarta` (same as `ProductReport`).
@@ -195,8 +195,9 @@ Unit test for `StockMovementService::query()` shape (column names, type/source c
 5. Sidebar nav entry.
 6. Feature tests + manual smoke test.
 
-## 8. Open Questions
+## 8. Resolved Notes
 
-- Does `sale_returns` have a status column that should gate inclusion? Verify in implementation; default to including all rows if no status exists.
-- Which fields does `sale_return_items` snapshot (qty, unit_price)? Confirm before wiring the export columns.
-- Confirm sidebar location and styling pattern for the new nav entry.
+- `sale_returns` has no status column — every return counts as IN.
+- `sale_return_items` snapshots `quantity`, `unit_price`, `subtotal` (no separate name/SKU snapshot — JOIN `products`).
+- Sidebar lives in `resources/views/layouts/navigation.blade.php`; nav entry added to the existing `reports.*` dropdown plus the mobile accordion.
+- `purchase_items` and `sale_items` do **not** snapshot SKU/name; soft-delete on `products` is not enabled (`restrictOnDelete` on FK), so a product cannot disappear from under a movement. Display uses `products.sku` / `products.name` via JOIN.
