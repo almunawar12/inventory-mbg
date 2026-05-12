@@ -21,6 +21,13 @@
     <div class="py-4">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
 
+            @if(session('success'))
+                <div class="p-3 bg-green-100 text-green-700 rounded border border-green-200 flex items-center gap-2">
+                    <x-heroicon-o-check-circle class="w-5 h-5" />
+                    <span>{{ session('success') }}</span>
+                </div>
+            @endif
+
             @if(session('error'))
                 <div class="p-3 bg-red-100 text-red-700 rounded">{{ session('error') }}</div>
             @endif
