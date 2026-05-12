@@ -1,5 +1,7 @@
 @php
     $alreadyReturnedMap = [];
+    $initialSale = null;
+    $initialItems = [];
     if ($sale) {
         $alreadyReturnedMap = \App\Models\SaleReturnItem::query()
             ->whereIn('sale_item_id', $sale->items->pluck('id'))
@@ -7,6 +9,28 @@
             ->groupBy('sale_item_id')
             ->pluck('total', 'sale_item_id')
             ->toArray();
+
+        $initialSale = [
+            'id' => $sale->id,
+            'invoice_number' => $sale->invoice_number,
+            'sale_date' => optional($sale->sale_date)->format('d/m/Y H:i'),
+            'customer' => $sale->customer?->name ?? 'Guest',
+            'total' => $sale->total,
+        ];
+
+        $initialItems = $sale->items->map(function ($item) use ($alreadyReturnedMap) {
+            $alreadyReturned = (int) ($alreadyReturnedMap[$item->id] ?? 0);
+            return [
+                'sale_item_id'     => $item->id,
+                'product_name'     => $item->product?->name,
+                'unit'             => $item->product?->unit?->name,
+                'quantity'         => $item->quantity,
+                'already_returned' => $alreadyReturned,
+                'available_qty'    => $item->quantity - $alreadyReturned,
+                'final_price'      => $item->final_price,
+                'return_qty'       => 0,
+            ];
+        })->values()->toArray();
     }
 @endphp
 <x-app-layout title="New Return">
@@ -120,26 +144,8 @@
     <script>
         function saleReturnForm() {
             return {
-                sale: @json($sale ? [
-                    'id' => $sale->id,
-                    'invoice_number' => $sale->invoice_number,
-                    'sale_date' => $sale->sale_date,
-                    'customer' => $sale->customer?->name ?? 'Guest',
-                    'total' => $sale->total,
-                ] : null),
-                items: @json($sale ? $sale->items->map(function ($item) use ($alreadyReturnedMap) {
-                    $alreadyReturned = (int) ($alreadyReturnedMap[$item->id] ?? 0);
-                    return [
-                        'sale_item_id'     => $item->id,
-                        'product_name'     => $item->product?->name,
-                        'unit'             => $item->product?->unit?->name,
-                        'quantity'         => $item->quantity,
-                        'already_returned' => $alreadyReturned,
-                        'available_qty'    => $item->quantity - $alreadyReturned,
-                        'final_price'      => $item->final_price,
-                        'return_qty'       => 0,
-                    ];
-                }) : []),
+                sale: @json($initialSale),
+                items: @json($initialItems),
                 invoice_input: '',
                 lookup_error: '',
                 reason: '',
