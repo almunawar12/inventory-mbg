@@ -6,13 +6,13 @@
 
     <div class="flex flex-wrap gap-2 print:hidden">
         <select wire:model.live="type"
-            class="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm">
+            class="h-9 rounded-md border border-input bg-background pl-3 pr-8 py-1 text-sm shadow-sm">
             <option value="all">Semua Jenis</option>
             <option value="in">Masuk</option>
             <option value="out">Keluar</option>
         </select>
         <select wire:model.live="source"
-            class="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm">
+            class="h-9 rounded-md border border-input bg-background pl-3 pr-8 py-1 text-sm shadow-sm">
             <option value="all">Semua Sumber</option>
             <option value="purchase">Pembelian</option>
             <option value="sale">Penjualan</option>
