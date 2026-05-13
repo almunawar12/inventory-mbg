@@ -21,9 +21,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Paksa HTTPS jika dijalankan di production/dokploy
-        if (config('app.env') !== 'local') {
-            URL::forceScheme('https');
+        // Paksa HTTPS selalu
+        if (str_contains(config('app.url'), 'https://')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
+        // Paksa HTTPS jika ada X-Forwarded-Proto dari proxy
+        if (request()->header('x-forwarded-proto') === 'https') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
         }
 
         Blade::directive('money', function ($expression) {
