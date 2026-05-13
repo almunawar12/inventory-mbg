@@ -1,5 +1,6 @@
 import flatpickr from "flatpickr";
 import TomSelect from "tom-select";
+import Alpine from "alpinejs";
 import "./bootstrap";
 import "./../../vendor/power-components/livewire-powergrid/dist/powergrid";
 
@@ -7,6 +8,5 @@ import "./../../vendor/power-components/livewire-powergrid/dist/powergrid";
 window.TomSelect = TomSelect;
 window.flatpickr = flatpickr;
 
-// import Alpine from 'alpinejs';
-// window.Alpine = Alpine;
-// Alpine.start();
+// Set Alpine globally before Livewire initializes — Livewire v3 calls Alpine.start()
+window.Alpine = Alpine;
