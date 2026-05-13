@@ -21,7 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (str_starts_with(config('app.url'), 'https://')) {
+        // Paksa HTTPS jika dijalankan di production/dokploy
+        if (config('app.env') !== 'local') {
             URL::forceScheme('https');
         }
 
