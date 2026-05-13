@@ -1,6 +1,8 @@
 services:
   app:
-    image: ghcr.io/almunawar12/inventory-mbg:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       mysql:
