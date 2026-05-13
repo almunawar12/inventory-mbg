@@ -41,18 +41,10 @@ services:
       - internal
     labels:
       - traefik.enable=true
-      # HTTPS router
       - traefik.http.routers.inventory.rule=Host(`${APP_DOMAIN}`)
       - traefik.http.routers.inventory.entrypoints=websecure
       - traefik.http.routers.inventory.tls.certresolver=letsencrypt
-      - traefik.http.routers.inventory.middlewares=redirect-to-https
       - traefik.http.services.inventory.loadbalancer.server.port=80
-      # HTTP → HTTPS redirect
-      - traefik.http.routers.inventory-http.rule=Host(`${APP_DOMAIN}`)
-      - traefik.http.routers.inventory-http.entrypoints=web
-      - traefik.http.routers.inventory-http.middlewares=redirect-to-https
-      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
-      - traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true
 
   mysql:
     image: mysql:8.0
