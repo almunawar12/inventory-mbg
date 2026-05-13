@@ -21,15 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Paksa HTTPS selalu
-        if (str_contains(config('app.url'), 'https://')) {
-            \Illuminate\Support\Facades\URL::forceScheme('https');
-        }
-
-        // Paksa HTTPS jika ada X-Forwarded-Proto dari proxy
-        if (request()->header('x-forwarded-proto') === 'https') {
-            \Illuminate\Support\Facades\URL::forceScheme('https');
-        }
+        // Paksa semua URL dan tautan di aplikasi otomatis menggunakan HTTPS
+        \Illuminate\Support\Facades\URL::forceScheme('https');
 
         Blade::directive('money', function ($expression) {
             return "<?php echo format_money($expression); ?>";
