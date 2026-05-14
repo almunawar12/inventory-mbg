@@ -39,6 +39,7 @@ COPY . .
 
 RUN composer dump-autoload --optimize --no-dev \
     && npm run build \
+    && php artisan vendor:publish --tag=livewire:assets --force \
     && rm -rf node_modules \
     && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
