@@ -1,7 +1,8 @@
-import defaultTheme from 'tailwindcss/defaultTheme';
-import forms from '@tailwindcss/forms';
+import defaultTheme from "tailwindcss/defaultTheme";
+import forms from "@tailwindcss/forms";
 
 export default {
+    darkMode: "class",
     presets: [
         require("./vendor/power-components/livewire-powergrid/tailwind.config.js"),
     ],
